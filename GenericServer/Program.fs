@@ -130,7 +130,7 @@ let startServer (initialCoreState, execute) (initialConnectionState, validate, f
 // (unit -> 'a) -> ('a * 'b -> Async<'a * 'c>) -> MailboxProcessor<instruction<'b,'c>>    
 let test_initialCoreState() =  0 
 let test_execute = fun (s, message) -> async {
-    Console.WriteLine("...Executing {0} on {1}", message, s)
+    Console.WriteLine("...Executing corestate:{0} on message:{1}", message, s)
     return s + 1, s.ToString()
 }
                                         
@@ -154,31 +154,30 @@ let bytes =
     formatter.Serialize(memoryStream, 200)
     memoryStream.ToArray()
 System.BitConverter.GetBytes bytes.Length |> stream.Write
-stream.Write(bytes, 0, bytes.Length)
+serialize stream 250 |> Async.RunSynchronously 
+// stream.Write(bytes, 0, bytes.Length)
 stream.Flush()
-
-// let xx:int = deserialize stream |> Async.RunSynchronously
-// Console.WriteLine(xx.ToString())
+client.Close()
 
 
 for i in 1..10 do
-    printfn "Sending %d" i
     let client = new Sockets.TcpClient()
     client.Connect(IPAddress.Loopback, 8081)
     let stream = client.GetStream()
-    
     let formatter = System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
     let bytes =
         use memoryStream = new System.IO.MemoryStream()
-        formatter.Serialize(memoryStream, i)
+        formatter.Serialize(memoryStream, i*1000)
         memoryStream.ToArray()
     let bytes_2 =
         use memoryStream = new System.IO.MemoryStream()
-        formatter.Serialize(memoryStream, 150)
+        formatter.Serialize(memoryStream, (i*202))
         memoryStream.ToArray()    
     System.BitConverter.GetBytes bytes.Length |> stream.Write
     stream.Write(bytes, 0, bytes.Length)
-    stream.Write(bytes, 0, bytes_2.Length)
+    stream.Flush()
+    System.BitConverter.GetBytes bytes_2.Length |> stream.Write
+    stream.Write(bytes_2, 0, bytes_2.Length)
     stream.Flush()
     
     client.Close()
