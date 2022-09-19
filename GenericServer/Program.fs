@@ -1,4 +1,6 @@
 ﻿open System
+open System.Net
+open System.Runtime.Serialization.Formatters.Binary
 
 type connectionMessage<'a, 'b> =
     | Incoming of 'a
@@ -18,7 +20,11 @@ type destination =
 type instruction<'a, 'b> =
     | ExecuteAndRelay of 'a * destination
     | EditConnection of connectionId * 'b connectionEdit
-    
+
+type result<'a> =
+    | Failure
+    | Success of 'a
+
 let serialize (stream: System.IO.Stream) value =
     async {
             let formatter = System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
@@ -28,6 +34,7 @@ let serialize (stream: System.IO.Stream) value =
                         memoryStream.ToArray()
             do! System.BitConverter.GetBytes bytes.Length |> stream.AsyncWrite
             do! stream.AsyncWrite bytes
+            stream.Flush()
     }    
     
 let deserialize (stream: System.IO.Stream) =
@@ -40,6 +47,53 @@ let deserialize (stream: System.IO.Stream) =
             return formatter.Deserialize memoryStream |> unbox
     }
 
+let streamConnection (stream: System.IO.Stream) =
+    let received = Event<_>()
+    async {
+    while true do
+        let! d = deserialize stream 
+        received.Trigger d
+    } |> Async.Start
+    let send msg =
+        try
+            serialize stream msg |> Async.RunSynchronously
+            Success()
+        with _ ->
+            Failure
+    send, received.Publish
+    
+type MessagePassing<'a,'b> =
+    static member Client(ipAddress: IPAddress, port) : result<('a -> result<unit>) * IEvent<'b>> =
+        try
+            let client = new Sockets.TcpClient(NoDelay=true)
+            client.Connect(ipAddress, port)
+            let stream = client.GetStream()
+            let send, receive = streamConnection stream
+            Success(send, receive)
+        with _ -> Failure
+    
+    static member Server port : result<('b -> unit) * IEvent<'a>> =
+        try
+            let server = Sockets.TcpListener(IPAddress.Any, port)
+            server.Start()
+            let relay = Event<_>()
+            let received = Event<_>()
+            async {
+                while true do
+                    let client = server.AcceptTcpClient()
+                    let stream = client.GetStream()
+                    let sendToClient, receivedFromClient = streamConnection stream
+                    receivedFromClient.Add received.Trigger
+                    let rec handler = Handler<_>(fun _ msg ->
+                        match sendToClient msg with
+                        | Success() -> ()
+                        | Failure -> relay.Publish.RemoveHandler handler)
+                    relay.Publish.AddHandler handler
+            } |> Async.Start
+            Success(relay.Trigger, received.Publish)
+            with _ -> Failure
+    
+    
 let deserializer client stream post =
     MailboxProcessor.Start(fun inbox -> async{
         use client = client
@@ -51,7 +105,14 @@ let deserializer client stream post =
         finally
             post ConnectionLost
     })
+ 
+type 'a imsg =
+    | Hello of 'a
+
+type 'a omsg =
+    | World of 'a
     
+type ExampleMessagePassing = MessagePassing<int imsg, int omsg>    
 let server initialCoreState execute =
     MailboxProcessor<_>.Start(fun inbox ->
         let rec loop (connections: Map<_, _>) coreState = async {
@@ -111,6 +172,8 @@ let startServer (initialCoreState, execute) (initialConnectionState, validate, f
     let server = server initialCoreState execute
     
     let rec handleConnection connectionId (client: Sockets.TcpClient) = async {
+            //print connectionId
+            System.Console.WriteLine($"Connection {connectionId} established")
             let stream = client.GetStream()
             let connection = connectionAgent initialConnectionState validate filter server.Post connectionId stream
             deserializer client stream connection.Post |> ignore
@@ -127,76 +190,54 @@ let startServer (initialCoreState, execute) (initialConnectionState, validate, f
     do! loop 0UL
     } |> Async.Start;;
     
-// (unit -> 'a) -> ('a * 'b -> Async<'a * 'c>) -> MailboxProcessor<instruction<'b,'c>>    
-let test_initialCoreState() =  0 
-let test_execute = fun (s, message) -> async {
-    Console.WriteLine("...Executing corestate:{0} on message:{1}", message, s)
-    return s + 1, s.ToString()
+type initialServerState =
+    {
+    connectionString: string
+    requestCounts: uint64
+    }
+    
+let test_initialCoreState() =
+    {connectionString = "localhost"; requestCounts = 0UL}
+let test_execute = fun (coreState:initialServerState, message:int imsg) -> async {
+    let newCoreState = {coreState with requestCounts = coreState.requestCounts + 1UL}
+    Console.WriteLine("...Executing connection string:{0} current request count: {1} on message:{2}", coreState.connectionString, coreState.requestCounts ,message)
+    match message with
+            | Hello n -> return newCoreState, World (n+1)
+    
 }
-                                        
-let test_initialConnectionState = fun connectionId ->  0
-let test_validate = fun (state, message) -> async { return state, message, ToAll }
-let test_filter = fun (state, message) -> async { return state, Some message }
+let test_initialConnectionState = fun connectionId ->  connectionId
+let test_validate = fun (state:connectionId, message: int imsg) -> async { return state, message, ToAll }
+let test_filter = fun (state:connectionId, message: int omsg) -> async { return state, Some message }
 
 //((unit -> 'a) * ('a * 'b -> Async<'a * 'c>)) -> ((connectionId -> 'd) * ('d * 'e -> Async<'d * 'b * destination>) * ('d * 'c -> Async<'d * 'f option>)) -> IPAddress -> int -> unit
-
 startServer (test_initialCoreState, test_execute) (test_initialConnectionState, test_validate, test_filter)
     IPAddress.Loopback
     8081
    
 
-let client = new Sockets.TcpClient()
-client.Connect(IPAddress.Loopback, 8081)
-let stream = client.GetStream()
-let formatter = System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
-let bytes =
-    use memoryStream = new System.IO.MemoryStream()
-    formatter.Serialize(memoryStream, 200)
-    memoryStream.ToArray()
-System.BitConverter.GetBytes bytes.Length |> stream.Write
-serialize stream 250 |> Async.RunSynchronously 
-// stream.Write(bytes, 0, bytes.Length)
-stream.Flush()
-client.Close()
-
+let print s = System.Console.WriteLine((s()).ToString())
 
 for i in 1..10 do
-    let client = new Sockets.TcpClient()
-    client.Connect(IPAddress.Loopback, 8081)
-    let stream = client.GetStream()
-    let formatter = System.Runtime.Serialization.Formatters.Binary.BinaryFormatter()
-    let bytes =
-        use memoryStream = new System.IO.MemoryStream()
-        formatter.Serialize(memoryStream, i*1000)
-        memoryStream.ToArray()
-    let bytes_2 =
-        use memoryStream = new System.IO.MemoryStream()
-        formatter.Serialize(memoryStream, (i*202))
-        memoryStream.ToArray()    
-    System.BitConverter.GetBytes bytes.Length |> stream.Write
-    stream.Write(bytes, 0, bytes.Length)
-    stream.Flush()
-    System.BitConverter.GetBytes bytes_2.Length |> stream.Write
-    stream.Write(bytes_2, 0, bytes_2.Length)
-    stream.Flush()
+    match ExampleMessagePassing.Client (IPAddress.Loopback, 8081) with
+            | Failure -> failwith "Client failed to connect to server"
+            | Success(sendToServer, receivedFromServer) ->
+                let clientHandler msg =
+                    print(fun () -> sprintf "Client %d received: %A" i msg)
+                receivedFromServer.Add clientHandler
+                // Threading.Thread.Sleep(100)
+                match sendToServer (Hello 10) with
+                | Failure -> failwith "Client failed to send message to server"
+                | Success() -> ()
     
-    client.Close()
+// let client = new Sockets.TcpClient()
+// client.Connect(IPAddress.Loopback, 8081)
+// let stream = client.GetStream()
+// serialize stream (Hello 100) |> Async.RunSynchronously
+// serialize stream (Hello 1000) |> Async.RunSynchronously
+// client.Close()
 
 
-// let data:string = deserialize stream |> Async.RunSynchronously
-// Console.WriteLine(data)
-
-// let! header = stream.AsyncRead 4
-// let length = System.BitConverter.ToInt32(header, 0)
-// let! bytes = stream.AsyncRead length
-// use memoryStream = new System.IO.MemoryStream(bytes)
-// formatter.Deserialize memoryStream |> unbox
-
-
-
-// startServer(test_initialCoreState, test_execute) (test_initialConnectionState, test_validate, test_filter) IPAddress.Loopback 8080
-
-
+stdin.ReadLine() |> ignore
 
 // For more information see https://aka.ms/fsharp-console-apps
-printfn "Hello from F#"
+printfn "Done!"
