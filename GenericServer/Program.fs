@@ -173,7 +173,7 @@ let startServer (initialCoreState, execute) (initialConnectionState, validate, f
     
     let rec handleConnection connectionId (client: Sockets.TcpClient) = async {
             //print connectionId
-            System.Console.WriteLine($"Connection {connectionId} established")
+            // System.Console.WriteLine($"Connection {connectionId} established")
             let stream = client.GetStream()
             let connection = connectionAgent initialConnectionState validate filter server.Post connectionId stream
             deserializer client stream connection.Post |> ignore
@@ -200,20 +200,24 @@ let test_initialCoreState() =
     {connectionString = "localhost"; requestCounts = 0UL}
 let test_execute = fun (coreState:initialServerState, message:int imsg) -> async {
     let newCoreState = {coreState with requestCounts = coreState.requestCounts + 1UL}
-    Console.WriteLine("...Executing connection string:{0} current request count: {1} on message:{2}", coreState.connectionString, coreState.requestCounts ,message)
+    // Console.WriteLine("...Executing connection string:{0} current request count: {1} on message:{2}", coreState.connectionString, coreState.requestCounts ,message)
     match message with
             | Hello n -> return newCoreState, World (n+1)
     
 }
-let test_initialConnectionState = fun connectionId ->  connectionId
-let test_validate = fun (state:connectionId, message: int imsg) -> async { return state, message, ToAll }
-let test_filter = fun (state:connectionId, message: int omsg) -> async { return state, Some message }
+
+type sessionState =
+    {
+     SessionID: connectionId
+    }
+let test_initialConnectionState = fun connectionId ->  { SessionID = connectionId }
+let test_validate = fun (state:sessionState, message: int imsg) -> async { return state, message, To state.SessionID }
+let test_filter = fun (state:sessionState, message: int omsg) -> async { return state, Some message }
 
 //((unit -> 'a) * ('a * 'b -> Async<'a * 'c>)) -> ((connectionId -> 'd) * ('d * 'e -> Async<'d * 'b * destination>) * ('d * 'c -> Async<'d * 'f option>)) -> IPAddress -> int -> unit
 startServer (test_initialCoreState, test_execute) (test_initialConnectionState, test_validate, test_filter)
     IPAddress.Loopback
     8081
-   
 
 let print s = System.Console.WriteLine((s()).ToString())
 
@@ -225,18 +229,13 @@ for i in 1..10 do
                     print(fun () -> sprintf "Client %d received: %A" i msg)
                 receivedFromServer.Add clientHandler
                 // Threading.Thread.Sleep(100)
-                match sendToServer (Hello 10) with
+                match sendToServer (Hello i) with
+                | Failure -> failwith "Client failed to send message to server"
+                | Success() -> ()
+                match sendToServer (Hello (i*1000)) with
                 | Failure -> failwith "Client failed to send message to server"
                 | Success() -> ()
     
-// let client = new Sockets.TcpClient()
-// client.Connect(IPAddress.Loopback, 8081)
-// let stream = client.GetStream()
-// serialize stream (Hello 100) |> Async.RunSynchronously
-// serialize stream (Hello 1000) |> Async.RunSynchronously
-// client.Close()
-
-
 stdin.ReadLine() |> ignore
 
 // For more information see https://aka.ms/fsharp-console-apps
