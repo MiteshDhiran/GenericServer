@@ -106,13 +106,7 @@ let deserializer client stream post =
             post ConnectionLost
     })
  
-type 'a imsg =
-    | Hello of 'a
-
-type 'a omsg =
-    | World of 'a
-    
-type ExampleMessagePassing = MessagePassing<int imsg, int omsg>    
+   
 let server initialCoreState execute =
     MailboxProcessor<_>.Start(fun inbox ->
         let rec loop (connections: Map<_, _>) coreState = async {
@@ -195,6 +189,19 @@ type initialServerState =
     connectionString: string
     requestCounts: uint64
     }
+
+
+
+type 'a imsg =
+    | Hello of 'a
+
+type 'a vimsg =
+    | ValidatedHello of 'a
+
+type 'a omsg =
+    | World of 'a
+    
+type ExampleMessagePassing = MessagePassing<int imsg, int omsg> 
     
 let test_initialCoreState() =
     {connectionString = "localhost"; requestCounts = 0UL}
@@ -206,16 +213,30 @@ let test_execute = fun (coreState:initialServerState, message:int imsg) -> async
     
 }
 
+let test_execute_validated_message = fun (coreState:initialServerState, message:int vimsg) -> async {
+    let newCoreState = {coreState with requestCounts = coreState.requestCounts + 1UL}
+    Console.WriteLine("...Executing connection string:{0} current request count: {1} on message:{2}", coreState.connectionString, coreState.requestCounts ,message)
+    match message with
+            | ValidatedHello n -> return newCoreState, World (n+1)
+    
+}
+
 type sessionState =
     {
      SessionID: connectionId
+     NumberOfRequestsInSession: uint64
     }
-let test_initialConnectionState = fun connectionId ->  { SessionID = connectionId }
-let test_validate = fun (state:sessionState, message: int imsg) -> async { return state, message, To state.SessionID }
+let test_initialConnectionState = fun connectionId ->  { SessionID = connectionId; NumberOfRequestsInSession = 0UL }
+let test_validate = fun (state:sessionState, message: int imsg) -> async {
+                                                                            let validatedMessage = match message with
+                                                                                                        | Hello i -> ValidatedHello i 
+                                                                            return state, validatedMessage, To state.SessionID
+                                                                          }
+//let test_validate = fun (state:sessionState, message: int imsg) -> async { return state, message, To state.SessionID }
 let test_filter = fun (state:sessionState, message: int omsg) -> async { return state, Some message }
 
 //((unit -> 'a) * ('a * 'b -> Async<'a * 'c>)) -> ((connectionId -> 'd) * ('d * 'e -> Async<'d * 'b * destination>) * ('d * 'c -> Async<'d * 'f option>)) -> IPAddress -> int -> unit
-startServer (test_initialCoreState, test_execute) (test_initialConnectionState, test_validate, test_filter)
+startServer (test_initialCoreState, test_execute_validated_message) (test_initialConnectionState, test_validate, test_filter)
     IPAddress.Loopback
     8081
 
@@ -226,7 +247,7 @@ for i in 1..10 do
             | Failure -> failwith "Client failed to connect to server"
             | Success(sendToServer, receivedFromServer) ->
                 let clientHandler msg =
-                    print(fun () -> sprintf "Client %d received: %A" i msg)
+                    print(fun () -> sprintf "Client %d received: %A on %s" i msg (DateTime.Now.ToShortTimeString()))
                 receivedFromServer.Add clientHandler
                 // Threading.Thread.Sleep(100)
                 match sendToServer (Hello i) with
