@@ -11,4 +11,9 @@
         <Compile Include="Program.fs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <EmbeddedResource Remove="obj\Debug\**" />
+      <EmbeddedResource Remove="obj\**" />
+    </ItemGroup>
+
 </Project>

@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GenericServer", "GenericServer\GenericServer.fsproj", "{F9BC6F96-C3BC-495E-85F4-37D1EED7F406}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharpMailBoxServerLib", "FSharpMailBoxServerLib\FSharpMailBoxServerLib.fsproj", "{DCA80D14-FBCA-4D0B-8A67-E75CABC324C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerAPI", "ServerAPI\ServerAPI.csproj", "{E83CD3A6-A278-424C-A100-B8EFC693E998}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{F9BC6F96-C3BC-495E-85F4-37D1EED7F406}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9BC6F96-C3BC-495E-85F4-37D1EED7F406}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9BC6F96-C3BC-495E-85F4-37D1EED7F406}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCA80D14-FBCA-4D0B-8A67-E75CABC324C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCA80D14-FBCA-4D0B-8A67-E75CABC324C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCA80D14-FBCA-4D0B-8A67-E75CABC324C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCA80D14-FBCA-4D0B-8A67-E75CABC324C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E83CD3A6-A278-424C-A100-B8EFC693E998}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E83CD3A6-A278-424C-A100-B8EFC693E998}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E83CD3A6-A278-424C-A100-B8EFC693E998}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E83CD3A6-A278-424C-A100-B8EFC693E998}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

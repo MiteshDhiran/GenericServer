@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="d18e19e3-33bd-4a19-9e85-2f0d495f399f" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../AppConsumingFSharpServer/AppConsumingFSharpServer.csproj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../AppConsumingFSharpServer/Program.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FSharpMailBoxServerLib.fsproj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/GenericServerAPI.fs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Library.fs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../GenericServer/.vs/GenericServer/xs/UserPrefs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../GenericServer/.vs/GenericServer/xs/project-cache/AppConsumingFSharpServer-Debug.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../GenericServer/.vs/GenericServer/xs/project-cache/FSharpMailBoxServerLib-Debug.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../GenericServer/.vs/GenericServer/xs/project-cache/GenericServer-Debug.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../GenericServer/GenericServer.sln" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../GenericServer.sln" beforeDir="false" afterPath="$PROJECT_DIR$/../GenericServer.sln" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../GenericServer/Program.fs" beforeDir="false" afterPath="$PROJECT_DIR$/../GenericServer/Program.fs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectId" id="2FUh7ZzLN2cG3NIMs9QUmpSMhC1" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="d18e19e3-33bd-4a19-9e85-2f0d495f399f" name="Changes" comment="" />
+      <created>1664552403840</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1664552403840</updated>
+      <workItem from="1664552413244" duration="11000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
+  <component name="UnityUnitTestConfiguration" currentTestLauncher="NUnit" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+</project>
